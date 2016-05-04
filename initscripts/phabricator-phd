@@ -1,0 +1,65 @@
+#! /bin/sh -e
+### BEGIN INIT INFO
+# Provides:          phd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Should-Start:      mysql
+# Should-Stop:       mysql
+# Short-Description: phd
+# Description:       phabricator daemons
+### END INIT INFO
+DAEMON="/home/phabricator/phabricator/bin/phd"
+#DAEMON_OPT=""
+DAEMONUSER="phabricator-daemon"
+DAEMON_NAME="phd"
+
+PATH="/sbin:/bin:/usr/sbin:/usr/bin"
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+d_start () {
+	check_pid_dir
+        log_daemon_msg "Starting system $DAEMON_NAME Daemon"
+	    start-stop-daemon --start --quiet --chuid $DAEMONUSER --exec $DAEMON -- start
+        log_end_msg $?
+}
+
+d_stop () {
+        log_daemon_msg "Stopping system $DAEMON_NAME Daemon"
+        start-stop-daemon --start --quiet --chuid $DAEMONUSER --exec $DAEMON -- stop
+	    log_end_msg $?
+}
+
+check_pid_dir() {
+    # Create the pid directory if necessary
+    if [ ! -d /run/phabricator ]; then
+        mkdir /run/phabricator
+        chown $DAEMONUSER:nogroup /run/phabricator
+    fi
+}
+
+
+case "$1" in
+
+    start|stop)
+        d_${1}
+        ;;
+
+    restart|reload|force-reload)
+        d_stop
+        d_start
+        ;;
+
+    status)
+        $DAEMON status  && exit 0 || exit $?
+        ;;
+    *)
+        echo "Usage: /etc/init.d/$DAEMON_NAME {start|stop|restart|reload|force-reload|status}"
+        exit 1
+        ;;
+esac
+exit 0
